@@ -92,6 +92,8 @@ def statpic(stat, res_param, F, fraction='1/3', showvc=True, vclines=['C','D','E
             axs.set_ylabel('$ Виброскорость,\ мкм/с $', fontsize=14)
         elif res_param == 'a':
             axs.set_ylabel('$ Виброускорение,\ м/с^{2} $', fontsize=14)
+        elif res_param == 'd':
+            axs.set_ylabel('$ Виброперемещение,\ мкм $', fontsize=14)
         elif res_param == 'Lv':
             axs.set_ylabel('$ Уровень\ виброскорости,\ дБ $', fontsize=14)
         elif res_param == 'La':
@@ -116,6 +118,9 @@ def statpic(stat, res_param, F, fraction='1/3', showvc=True, vclines=['C','D','E
                                 fontsize=12, y=0)
             elif res_param == 'a':
                 axs1.set_title(f'$ Виброускорение\ (м/с^{2})\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                                fontsize=12, y=0)
+            elif res_param == 'd':
+                axs1.set_title(f'$ Виброперемещение\ (мкм)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
                                 fontsize=12, y=0)
             elif res_param == 'Lv':
                 axs1.set_title(f'$ Уровень\ виброскорости\ (дБ)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 

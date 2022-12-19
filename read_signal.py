@@ -18,7 +18,7 @@ F1_3 = [0.8, 1, 1.25, 1.6, 2, 2.5, 3.15, 4, 5, 6.3, 8, 10, 12.5, 16, 20, 25, 31.
        2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000]
 
 
-def selectfiles():
+def selectfiles ():
     import tkinter as tk
     from tkinter import filedialog
 
@@ -28,10 +28,11 @@ def selectfiles():
     print(files)
     return files
 
-def readsignal(device, files, unit='m/s2', axes=['X','Y','Z'], points=None, cut=None, 
-               show=False, project_name=None):
+def readsignal (device, files, unit='m/s2', axes=['X','Y','Z'], points=None, point_name=None, cut=None, 
+               show=False):
+    
     """
-     Reads data from record files and converts it to usable format.
+     Reads data from record files and returns it as {axes[0] : pandas.Series0, axes[1] : pandas.Series1}
 
     Parameters
     ----------
@@ -42,33 +43,32 @@ def readsignal(device, files, unit='m/s2', axes=['X','Y','Z'], points=None, cut=
         4 - GtLab
         5 - National Instruments (NI)
         6 - SCADAS as .mat
-    files : path, list of paths
-        Initial file(s) to use.
-    unit : str, optional
-        Units of data. 'g' or 'm/s2'. Default is 'm/s2'.
-    fraction : int, optional
-        Bandwidth. 1/3-octave fraction=3, 1-octave fraction=1. Default is 3.
+    files : path or list of paths
+        Input file(s) to read.
+    unit : {'g','m/s2','other'}, optional
+        Units of data. 'g' or 'm/s2' (if 'm/s', it is defined automatically). Default is 'm/s2'.
     axes : list of str, optional
-        Axes names and order. Default is ['X','Y','Z'].
+        Ordered names of signal channels. Default is ['X','Y','Z'].
     points : list of str, optional
-        For multichannel devices. Points names and order in the record.
-    data_range : int, optional
-        Only for SS-box. Vibration measurement range.
+        For data with multiple measured points in one file, points names and order in the record. Used with Zetlab, NI and SCADAS devices.
+    point_name : str, optional
+        Name of the point. Must be in `points`, otherwise raises an error.
+        
     
     Returns
     -------
-    Signal by directions : dataframe
-        Dataframe of the same length as `data` and columns as axes.
+    Signal by directions : dict
+        Keys are axes, values are pandas.Series of the same length as `data`.
         Unit g is converted to m/s^2.
     """
-    # Check if all files are right format
+    
     _checkformat(files, device)
 
     fs=None
 
     if device == 1:
         fs = 1000
-        data = _read_zetlab(files, axes, points, cut, project_name)
+        data = _read_zetlab(files, axes, points, cut, point_name)
     elif device == 2:
         data, fs = _read_ssbox(files, unit, axes)
     elif device == 3:
@@ -91,8 +91,8 @@ def readsignal(device, files, unit='m/s2', axes=['X','Y','Z'], points=None, cut=
         return data
 
 
-def _checkformat(files, device):
-    """ Check for files to have wright extension """
+def _checkformat (files, device):
+    """ Check for files to have correct extension """
     import os.path
     import re
     ext = { 1:'.csv', 2:'.11\d', 2:'.txt', 3:'.csv', 4:'.txt', 5:'.lvm', 6:'.mat' }
@@ -104,8 +104,21 @@ def _checkformat(files, device):
             pass
 
 
-def cut_edges(data, cut):
-    """Cuts first and last n values"""
+def cut_edges (data, cut):
+    """Delete first and last n values
+
+    Parameters
+    ----------
+    data : _type_
+        _description_
+    cut : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     if type(cut) == int:
         cut = [cut, cut]
     data = data.iloc[cut[0] : -1*cut[1]]
@@ -124,7 +137,7 @@ def cut_middle(data, cut=None):
     return data.reset_index(drop=True)
 
 
-def _read_zetlab(files, axes, points, cut, project_name):
+def _read_zetlab(files, axes, points, cut, point_name):
     """
     Reads data from ZetLab (Bochka)
     """
@@ -145,18 +158,18 @@ def _read_zetlab(files, axes, points, cut, project_name):
     # Finding the beginning of the record
     cut_start = cut[0]*fs   # to skip first seconds of the record
     for start in range(cut_start, len(vibration)):
-        if vibration.iloc[start, points.index(project_name)*3] != 0:
+        if vibration.iloc[start, points.index(point_name)*3] != 0:
             break
     
     # Finding the end of the record
     cut_end = cut[1]*fs
     for end in range(cut_end, len(vibration)):
-        if vibration.iloc[-1*end, points.index(project_name)*3] != 0:
+        if vibration.iloc[-1*end, points.index(point_name)*3] != 0:
             break
     
     data = {}
     for ax in axes:
-        data[ax] = vibration.iloc[start+30*fs:-1*(end+30*fs), points.index(project_name)*3 + axes.index(ax)].reset_index(drop=True)
+        data[ax] = vibration.iloc[start+30*fs:-1*(end+30*fs), points.index(point_name)*3 + axes.index(ax)].reset_index(drop=True)
         
     return data, fs
 
@@ -176,18 +189,17 @@ def _read_ssbox(files, unit, axes):
     bits = 16;      # bits
     dt = np.dtype('int16')
     
+    data = {}
     if unit == 'g':
         data = [np.fromfile(file, dtype=dt) for file in files]
         vibration = pd.DataFrame(np.concatenate(data)).reset_index(drop=True)
-        data = {}
         for ax in axes:
             data[ax] = (vibration.loc[axes.index(ax)::3,:].reset_index(drop=True)
-            /(2**bits /(2*data_range))*9.81523)
+                        /(2**bits /(2*data_range))*9.81523)
 
     elif unit == 'strain':
         data = [pd.read_table(file, header=None, sep=',') for file in files]
         vibration = pd.concat(data).reset_index(drop=True)
-        data = {}
         for ax in axes:
             data[ax] = vibration.iloc[:,axes.index(ax)+1] / (2**bits /(2*data_range))
 
@@ -260,7 +272,7 @@ def _read_gtlab(files, unit, axes):
     
 #     points = ['T9','T10','T11']
     
-#     if project_name not in points:
+#     if point_name not in points:
 #         raise NameError('Название файла не соответствует точке измерения')
     
 #     if read_once == False:
@@ -272,25 +284,25 @@ def _read_gtlab(files, unit, axes):
     
 #     if unit == 'g':
 # #         vibration_list['X'] = pd.Series(np.concatenate(
-# #             [matfiles[file][list(matfiles[0])[points.index(project_name)*3+4]]['y_values'][0][0][0][0][0] 
+# #             [matfiles[file][list(matfiles[0])[points.index(point_name)*3+4]]['y_values'][0][0][0][0][0] 
 # #              for file in range(len(matfiles))], 
 # #             axis=0).flatten()*9.81523).drop(index=range(round(8276.1*fs),round(8276.6*fs))).iloc[10*fs:].reset_index(drop=True)
         
 #         vibration_list['Y'] = pd.Series(np.concatenate(
-#             [matfiles[file][list(matfiles[0])[points.index(project_name)*3+4]]['y_values'][0][0][0][0][0] 
+#             [matfiles[file][list(matfiles[0])[points.index(point_name)*3+4]]['y_values'][0][0][0][0][0] 
 #              for file in range(len(matfiles))], 
 #             axis=0).flatten()*9.81523).drop(
 #             index=range(round(8379*fs),round(8379.8*fs))
 #         ).iloc[10*fs:].reset_index(drop=True)
         
 #         vibration_list['Z'] = pd.Series(np.concatenate(
-#             [matfiles[file][list(matfiles[0])[points.index(project_name)*3+5]]['y_values'][0][0][0][0][0] 
+#             [matfiles[file][list(matfiles[0])[points.index(point_name)*3+5]]['y_values'][0][0][0][0][0] 
 #              for file in range(len(matfiles))], 
 #             axis=0).flatten()*9.81523).drop(
 #             index=range(round(8379*fs),round(8379.8*fs))
 #         ).iloc[10*fs:].reset_index(drop=True)
 
-def _showplot(axes, data, fs):
+def _showplot (axes, data, fs):
     import matplotlib.pyplot as plt
     for ax in axes:
         fig, axs = plt.subplots(figsize=(10, 5), tight_layout=True)
@@ -308,8 +320,10 @@ def _showplot(axes, data, fs):
         plt.show()
 
 
-def sig_avg(data, fs, Fv=None, time=1):
+def sig_avg (data, fs, Fv=None, time=1):
     """
+    Returns the rms of a signal.
+    
     Parameters
     ----------
     data : array like 
@@ -344,7 +358,7 @@ def sig_avg(data, fs, Fv=None, time=1):
     return rms
 
 
-def db2val(data, param='a'):
+def db2val (data, param='a'):
     """Convert levels (dB) to absolute values"""
     a0 = 1e-6   # m/s2
     v0 = 5e-8  # m/s
@@ -360,7 +374,7 @@ def db2val(data, param='a'):
         print('Unknown parameter')
         
 
-def val2db(data, param='a'):
+def val2db (data, param='a'):
     """Convert absolute values to levels (dB)"""
     a0 = 1e-6   # m/s2
     v0 = 5e-8  # m/s

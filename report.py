@@ -7,7 +7,7 @@ from .read_signal import val2db
 
 __all__ = ['stat_report']
 
-def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=None, fraction='1/3', init_rows=3, init_cols=1, name=f'stat_results', width=21):    
+def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=None, fraction='1/3', init_rows=3, init_cols=1, name=f'stat_results', num_format='0.00', width=21):    
     """Saves (statistics) report for protocol in .xlsx format that fits a standard (A4, vertical) page.
 
     Parameters
@@ -15,12 +15,13 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
     stats : list
         contains dictionaries (keys = axes) of dataframes (rows = stat params, cols = Freqs)
     res_param : str
+        Result units:
         'v' - velocity (mkm/s)
         'Lv' - velocity levels (dB)
         'a' - acceleration (m/s^2)
         'La' - acceleration levels (dB)
     subs : list, optional
-        subscripts for each stat heading, by default ['max','eq']
+        Subscripts for each stat heading, by default ['max','eq']
     spec : list
         Contains dicionaries with characteristics to be written in the initial columns, e.g. [train_daytime.loc[:,63], train_time.loc[:,63]]
     specLabels : list
@@ -52,7 +53,7 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
     else:
         res = res_param.upper()
         num_format = workbook.add_format({
-            'num_format': '0.00',
+            'num_format': num_format,
             'font_name': 'Times New Roman',
             'font_size': 9})
     cell_format = workbook.add_format({
@@ -90,6 +91,10 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
     if res_param == 'v':
         worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
                           f'Значения виброскоростей, мкм/с в {fraction} октавной полосе со среднегеометрической частотой, Гц',
+                          merge_format)
+    elif res_param == 'd':
+        worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
+                          f'Значения виброперемещений, мкм в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                           merge_format)
     elif res_param == 'La':
         worksheet.merge_range(0, init_cols, 0, init_cols-1+cols_byline_num*n_stats,
