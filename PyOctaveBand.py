@@ -3,33 +3,44 @@
 Octave-Band and Fractional Octave-Band filter.
 """
 
+# Public methods
+__all__ = ['octavefilter', 'getansifrequencies', 'normalizedfreq']
+
 import numpy as np
 import pandas
 from scipy import signal
 import matplotlib.pyplot as plt
 
 
-# Public methods
-__all__ = ['octavefilter', 'getansifrequencies', 'normalizedfreq']
-
-
-def octavefilter(x, fs, fraction=1, order=6, limits=None, show=0, sigbands =0):
+def octavefilter(x, fs, fraction=1, order=6, limits=None, show=0, sigbands=0):
     """
     Filter a signal with octave or fractional octave filter bank. This
     method uses a Butterworth filter with Second-Order Sections
     coefficients. To obtain the correct coefficients, a subsampling is
     applied to the signal in each filtered band.
-    :param x: Signal
-    :param fs: Sample rate
-    :param fraction: Bandwidth 'b'. Examples: 1/3-octave b=3, 1-octave b=1,
-    2/3-octave b = 3/2. [Optional] Default: 1.
-    :param order: Order of Butterworth filter. [Optional] Default: 6.
-    :param limits: Minimum and maximum limit frequencies. [Optional] Default
-    [12,20000]
-    :param show: Boolean for plot o not the filter response.
-    :param sigbands: Boolean to also return the signal in the time domain
-    divided into bands. A list with as many arrays as there are frequency bands.
-    :returns: Sound Pressure Level and Frequency array
+    
+    Parameters
+    ----------
+    x : array-like
+        Signal
+    fs : int
+        Sample rate
+    fraction : int, optional
+        Bandwidth 'b'. Examples: 1/3-octave b=3, 1-octave b=1,
+        2/3-octave b = 3/2. Default: 1.
+    order : int, optional
+        Order of Butterworth filter. Default: 6.
+    limits : list, optional
+        Minimum and maximum limit frequencies. Default is [12,20000]
+    show : bool, optional
+        Boolean for plot o not the filter response. Default: False
+    sigbands : bool, optional
+        Boolean to also return the signal in the time domain divided
+        into bands. A list with as many arrays as there are frequency bands. Default: False
+    
+    Returns
+    -------
+    Sound Pressure Level and Frequency array
     """
 
     if limits is None:
@@ -51,8 +62,20 @@ def octavefilter(x, fs, fraction=1, order=6, limits=None, show=0, sigbands =0):
         # Create array with SPL for each frequency band
         spl = np.zeros([len(freq)])
         xb = []
+        
+        ## older version code, caused bug
+        # for idx in range(len(freq)):
+        #     sd = signal.decimate(x, factor[idx])
+            
+        #     zi = signal.sosfilt_zi(sos[idx])
+        #     y, _ = signal.sosfilt(sos[idx], sd, zi=zi)
+            
+        #     spl[idx] = 20 * np.log10(np.std(y) / 2e-5)
+        #     xb.append(signal.resample_poly(y,factor[idx],1))
+        # return spl.tolist(), freq, xb
+        
         for idx in range(len(freq)):
-            sd = signal.decimate(x, factor[idx])
+            sd = signal.resample(x, round(len(x) / factor[idx]))
             y = signal.sosfilt(sos[idx], sd)
             spl[idx] = 20 * np.log10(np.std(y) / 2e-5)
             xb.append(signal.resample_poly(y,factor[idx],1))
@@ -141,11 +164,18 @@ def normalizedfreq(fraction):
     """
     Normalized frequencies for one-octave and third-octave band. [IEC
     61260-1-2014]
-    :param fraction: Octave type, for one octave fraction=1,
-    for third-octave fraction=3
-    :type fraction: int
-    :returns: frequencies array
-    :rtype: list
+    
+    Parameters
+    ----------
+    fraction : {1, 3}
+        Octave type, 
+        for one octave fraction = 1,
+        for third-octave fraction = 3
+    
+    Returns
+    -------
+    list
+        Frequencies array
     """
     predefined = {1: _oneoctave(),
                   3: _thirdoctave(),
@@ -178,10 +208,16 @@ def _deleteouters(freq, freq_d, freq_u, fs):
 def getansifrequencies(fraction, limits=None):
     """ ANSI s1.11-2004 && IEC 61260-1-2014
     Array of frequencies and its edges according to the ANSI and IEC standard.
+    
+    Parameters
+    ----------
     :param fraction: Bandwidth 'b'. Examples: 1/3-octave b=3, 1-octave b=1,
     2/3-octave b = 3/2
     :param limits: It is a list with the minimum and maximum frequency that
     the array should have. Example: [12,20000]
+    
+    Returns
+    -------
     :returns: Frequency array, lower edge array and upper edge array
     :rtype: list, list, list
     """

@@ -1,13 +1,29 @@
+#  Copyright (c) 2022. Pokormi-Kota
+"""
+Text and tables results saving and reading tools.
+
+See also
+^^^^^^^^
+`Report Results Standard <some_hyperlink>` by DynamicSystems co.
+"""
+
+
+__all__ = ['stat_report', 'trains_report', 'trains_report1', 'load_my_data']
+
 import math
-import os
 import pandas as pd
 import xlsxwriter
 
-from .read_signal import val2db
+# Next lines add the module directory to the system path to import its other submodules
+import sys, os, inspect
+SCRIPT_DIR = os.path.abspath(os.path.dirname(inspect.getfile(inspect.currentframe())))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-__all__ = ['stat_report']
+from vibe.read_signal import val2db
 
-def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=None, fraction='1/3', init_rows=3, init_cols=1, name=f'stat_results', num_format='0.00', width=21):    
+
+def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, specLabels=None, fraction='1/3', 
+                init_rows=3, init_cols=1, name='stat_results', num_format='0.00', width=21):    
     """Saves (statistics) report for protocol in .xlsx format that fits a standard (A4, vertical) page.
 
     Parameters
@@ -17,30 +33,44 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
     res_param : str
         Result units:
         'v' - velocity (mkm/s)
+        'mv' - velocity (m/s)
         'Lv' - velocity levels (dB)
         'a' - acceleration (m/s^2)
         'La' - acceleration levels (dB)
+    unit: {'dB', other}, optional
+        Units of input data. Necessary for correct conversion of values whether input 
+        is in dB or absolute units, by default 'abs'.
     subs : list, optional
         Subscripts for each stat heading, by default ['max','eq']
     spec : list
-        Contains dicionaries with characteristics to be written in the initial columns, e.g. [train_daytime.loc[:,63], train_time.loc[:,63]]
+        Contains dicionaries with characteristics to be written in the initial 
+        columns, e.g. [train_daytime.loc[:,63], train_time.loc[:,63]]
     specLabels : list
         Labels for initial columns, e.g. ['№ п/п', 'Время прохода', 'Время воздействия, с']
     init_rows : int, optional
         Number of rows with some headings, needed if one wants to leave blank rows at the top, by default 3
     init_cols : int, optional
-        Number of columns with some parameters except stat, needed if one wants to leave blank columns at the left, by default 1 or len(spec)+1
+        Number of columns with some parameters except stat, needed if one wants to leave blank 
+        columns at the left, by default 1 or len(spec)+1
     name : str, optional
-        Name of the file to be saved, by default f'stat_results'
+        Name of the file to be saved without extension, by default 'stat_results'
     width : int, optional
-        Number of columns to fit on a page, by default 20
+        Number of columns to fit on a page, by default 21
+        
+    Returns
+    -------
+    .xlsx file structured like one on the following picture
+    
+    .. image:: ./images/report/stat_report1.jpg
+            :align: center
+            :scale: 50 %
     """
     if spec != None:
         init_cols = len(spec) + 1
     n_stats = len(stats)   # number of statistics sets
     stats_ = [0]*n_stats
     axes = list(stats[0])
-    F = next(iter(stats[0].values())).columns
+    F = next(iter(stats[0].values())).columns   # collect frequencies from column names of input `stats`
 
     workbook = xlsxwriter.Workbook(f'{name}.xlsx', {'strings_to_numbers':  True})
 
@@ -49,25 +79,30 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
         num_format = workbook.add_format({
             'num_format': '0.0',
             'font_name': 'Times New Roman',
-            'font_size': 9})
+            'font_size': 9,
+            'border': 7})
     else:
-        res = res_param.upper()
+        res = res_param[-1].upper()
         num_format = workbook.add_format({
             'num_format': num_format,
             'font_name': 'Times New Roman',
-            'font_size': 9})
+            'font_size': 9,
+            'border': 7})
     cell_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'text_wrap': True})
     subscript = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'font_script': 2})
     merge_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'valign': 'vcenter',
         'text_wrap': True})
@@ -92,16 +127,20 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
         worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
                           f'Значения виброскоростей, мкм/с в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                           merge_format)
+    elif res_param == 'mv':
+        worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
+                          f'Значения виброскоростей, м/с в {fraction} октавной полосе со среднегеометрической частотой, Гц',
+                          merge_format)
     elif res_param == 'd':
         worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
                           f'Значения виброперемещений, мкм в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                           merge_format)
-    elif res_param == 'La':
-        worksheet.merge_range(0, init_cols, 0, init_cols-1+cols_byline_num*n_stats,
+    elif res_param == ('La' or 'LA'):
+        worksheet.merge_range(0, init_cols, 0, init_cols-1 + cols_byline_num*n_stats,
                               f'Уровни виброускорений, дБ в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                               merge_format)
     elif res_param == 'Lv':
-        worksheet.merge_range(0, init_cols, 0, init_cols-1+cols_byline_num*n_stats,
+        worksheet.merge_range(0, init_cols, 0, init_cols-1 + cols_byline_num*n_stats,
                               f'Уровни виброскоростей, дБ в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                               merge_format)
     if n_stats == 2:
@@ -119,10 +158,13 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
         # Convert to required units
         for i in range(n_stats):
             stats_[i] = {}
-            if res_param == 'Lv':
+            if res_param == 'Lv' and unit != 'dB':
                 stats_[i][ax] = val2db(stats[i][ax] * 1e-6, param='v')
-            elif res_param == 'La':
+            if res_param == 'mv' and unit != 'dB':
+                stats_[i][ax] = stats[i][ax] * 1e-6
+            elif res_param == 'La' and unit != 'dB':
                 stats_[i][ax] = val2db(stats[i][ax], param='a')
+                # stats_[i][ax] = stats[i][ax]
             else:
                 stats_[i][ax] = stats[i][ax]
 
@@ -155,10 +197,16 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
                                 f'{param}', cell_format)
                 if spec != None:
                     for s in range(len(spec)):
-                        worksheet.write(((init_rows+1+a + i*(stats[0][ax].shape[0]+1)
-                                        + a*(stats[0][ax].shape[0]+1)*split)+index_loc),
-                                        s+1,
-                                        f'{spec[s][ax].loc[index_loc,63]}', num_format)
+                        if type(spec[s]) == dict:
+                            worksheet.write(((init_rows+1+a + i*(stats[0][ax].shape[0]+1)
+                                            + a*(stats[0][ax].shape[0]+1)*split)+index_loc),
+                                            s+1,
+                                            f'{spec[s][ax].loc[index_loc,63]}', num_format)
+                        elif type(spec[s]) == list:
+                            worksheet.write(((init_rows+1+a + i*(stats[0][ax].shape[0]+1)
+                                            + a*(stats[0][ax].shape[0]+1)*split)+index_loc),
+                                            s+1,
+                                            f'{spec[s][index_loc]}', cell_format)
 
             for f in range(i*(cols_byline_num), (i+1)*(cols_byline_num)):
                 if f < len(F):
@@ -201,62 +249,80 @@ def stat_report(stats, res_param='v', subs=['max','eq'], spec=None, specLabels=N
 
     print(f'Report {name} is saved to: {os.getcwd()}')
 
-def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', init_rows=3-1, init_cols=3, name='trains'):
-    """Saves report with trains for protocol in .xlsx format
+def trains_report(params, train_daytime, res_param, unit='abs', stats=[], fraction='1/3', init_rows=3-1, init_cols=3, name='trains'):
+    """Saves report with trains for protocol in .xlsx format.
 
     Parameters
     ----------
     res_param : str
         'v' - velocity (mkm/s)
+        'mv' - velocity (m/s)
         'Lv' - velocity levels (dB)
         'a' - acceleration (m/s^2)
         'La' - acceleration levels (dB)
+    unit: {'dB', other}, optional
+        Units of input data. Necessary for correct conversion of values if input is in dB or absolute units, by default 'abs'.
     params : list
         [v_max, v_eq, v_train_time], train_time is the last
-    train_daytime : dict
-        _description_
-     stats : list
-        contains dictionaries (keys = axes) of dataframes (rows = stat params, cols = Freqs)
-    fraction : str
-        '1/1' or '1/3' octave
+    train_daytime : dict of df
+        Daytimes of trains passed
+    stats : list
+        Contains dictionaries (keys = axes) of dataframes (rows = stat params, cols = Freqs)
+    fraction : {'1/1', '1/3'}
+        Octave band width. Used for header
     init_rows : int, optional
-        number of rows with some headings, by default 3
+        Number of rows with some headings, by default 3
     init_cols : int, optional
-        number of columns with some parameters except stat, by default 1
+        Number of columns with some parameters except stat, by default 1
     name : str, optional
-        name of the file to be created, by default 'trains'
+        Name of the file to be created without extension, by default 'trains'
+        
+    Returns
+    -------
+    .xlsx file structured like one on the following picture
+    
+    .. image:: ./images/report/trains_report1.jpg
+            :align: center
+            :scale: 50 %
     """
-
+    
     workbook = xlsxwriter.Workbook(f'{name}.xlsx', {'strings_to_numbers':  True})
 
     if 'L' in res_param:
         num_format = workbook.add_format({
             'num_format': '0.0',
             'font_name': 'Times New Roman',
-            'font_size': 9})
+            'font_size': 9,
+            'border': 7})
     else:
         num_format = workbook.add_format({
             'num_format': '0.00',  #'General'
             'font_name': 'Times New Roman',
-            'font_size': 9})
+            'font_size': 9,
+            'border': 7})
+        
     cell_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'text_wrap': True})
     subscript = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'font_script': 2})
     merge_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'valign': 'vcenter',
         'text_wrap': True})
     rotated_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'valign': 'vcenter',
         'text_wrap': True})
@@ -265,6 +331,7 @@ def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', in
     v_train_time = params[-1]
     stats_ = [0]*n_stats
     axes = list(params[0])
+    
     if type(params[0][axes[0]]) == pd.core.frame.DataFrame:
         F = params[0][axes[0]].columns
     else:
@@ -274,17 +341,24 @@ def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', in
         # Convert to required units
         for i in range(n_stats):
             stats_[i] = {}
-            if res_param == 'Lv':
+            if res_param == 'Lv' and unit != 'dB':
                 stats_[i][ax] = val2db(stats[i][ax] * 1e-6, param='v')
-            elif res_param == 'La':
+            elif res_param == 'mv' and unit != 'dB':
+                stats_[i][ax] = stats[i][ax] * 1e-6
+            elif res_param == 'La' and unit != 'dB':
                 stats_[i][ax] = val2db(stats[i][ax], param='a')
+                # stats_[i][ax] = stats[i][ax]
             else:
                 stats_[i][ax] = stats[i][ax]
         params_ = []
-        if res_param == 'Lv':
+        
+        if res_param == 'Lv' and unit != 'dB':
             params_.append(val2db(params[0][ax] * 1e-6, param='v'))
             params_.append(val2db(params[1][ax] * 1e-6, param='v'))
-        elif res_param == 'La':
+        elif res_param == 'mv' and unit != 'dB':
+            params_.append(params[0][ax] * 1e-6)
+            params_.append(params[1][ax] * 1e-6)
+        elif res_param == 'La' and unit != 'dB':
             params_.append(val2db(params[0][ax], param='a'))
             params_.append(val2db(params[1][ax], param='a'))
         else:
@@ -306,6 +380,10 @@ def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', in
         elif res_param == 'v':
             worksheet.merge_range(0, init_cols, 0, init_cols-1+len(F)*n_stats,
                                   (f'Значения виброскоростей, мкм/с в {fraction} октавной полосе со среднегеометрической частотой, Гц'),
+                                  merge_format)
+        elif res_param == 'mv':
+            worksheet.merge_range(0, init_cols, 0, init_cols-1+len(F)*n_stats,
+                                  (f'Значения виброскоростей, м/с в {fraction} октавной полосе со среднегеометрической частотой, Гц'),
                                   merge_format)
         elif res_param == 'La':
             worksheet.merge_range(0, init_cols, 0, init_cols-1+len(F)*n_stats,
@@ -334,9 +412,9 @@ def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', in
                 worksheet.write_rich_string(2, init_cols+1 +j*n_stats, 
                                             cell_format, res_param[-1],
                                             subscript, 'eq', cell_format)
-            
+        
         num=0
-        for i in params[0][ax].index:                
+        for i in params[0][ax].index:
             num += 1
             worksheet.write((3+num), 0,
                            f'{num}', cell_format)
@@ -350,7 +428,7 @@ def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', in
                                 f'{params_[0].loc[i,F[j]]}', num_format)
                 worksheet.write((3+num), init_cols+1 +j*n_stats, 
                                 f'{params_[1].loc[i,F[j]]}', num_format)
-            
+        
         if n_stats>0:
             for param in stats_[0][ax].index:
                 index_loc = stats_[0][ax].index.get_loc(param)   # row number by its name
@@ -363,7 +441,7 @@ def trains_report(params, res_param, train_daytime, stats=[], fraction='1/3', in
                                     f'{stats_[0][ax].loc[param,F[j]]}', num_format)
                     worksheet.write((6+len(params[0][ax])+index_loc), init_cols+1 +j*n_stats, 
                                     f'{stats_[1][ax].loc[param,F[j]]}', num_format)
-            
+        
     workbook.close()
 
     print(f'Report {name} is saved to: {os.getcwd()}')
@@ -401,30 +479,36 @@ def trains_report1(stats, res_param, params, time, train_daytime, fraction='1/3'
         num_format = workbook.add_format({
             'num_format': '0.0',
             'font_name': 'Times New Roman',
-            'font_size': 9})
+            'font_size': 9,
+            'border': 7})
     else:
         num_format = workbook.add_format({
             'num_format': '0.00',
             'font_name': 'Times New Roman',
-            'font_size': 9})
+            'font_size': 9,
+            'border': 7})
     cell_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'text_wrap': True})
     subscript = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'font_script': 2})
     merge_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'valign': 'vcenter',
         'text_wrap': True})
     rotated_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
+        'border': 7,
         'align': 'center',
         'valign': 'vcenter',
         'text_wrap': True})
@@ -552,4 +636,46 @@ def trains_report1(stats, res_param, params, time, train_daytime, fraction='1/3'
     workbook.close()
 
     print(f'Report {name} is saved to: {os.getcwd()}')
+
+def load_my_data(file, Fv, nsplits=2, paramnum=1, nrows=6, axes=['X','Y','Z']):
+    """Read data that was saved by using `report.stat_report` function 
+
+    Parameters
+    ----------
+    file : str or path
+        Input file to read.
+    Fv : list
+        _description_
+    nsplits : int, optional
+        _description_, by default 2
+    paramnum : int, optional
+        _description_, by default 1
+    nrows : int, optional
+        _description_, by default 6
+    axes : list, optional
+        _description_, by default ['X','Y','Z']
+
+    Returns
+    -------
+    pandas.DataFrame
+    """
+    data = {}
+    for ax in axes:
+        dfs = []
+        for i in range(nsplits):
+            if i == nsplits:
+                dfs.append(pd.read_excel(file, header=None, names = None, index_col=0, nrows=nrows, 
+                                         usecols=range(0, math.floor(len(Fv)//nsplits)+1), 
+                                         skiprows=3+(nrows+1)*i+axes.index(ax)*(nsplits*(nrows+1)+1)
+                                        )
+                          )
+            else:
+                dfs.append(pd.read_excel(file, header=None, names = None, index_col=0, nrows=nrows, 
+                                         usecols=range(0, math.ceil(len(Fv)//nsplits)+1), 
+                                         skiprows=3+(nrows+1)*i+axes.index(ax)*(nsplits*(nrows+1)+1)
+                                        )
+                          )
+        data[ax] = pd.concat(dfs, axis=1).iloc[paramnum,:]
+        data[ax].columns = Fv
+    return data
 
