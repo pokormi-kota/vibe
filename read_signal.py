@@ -105,7 +105,7 @@ def _checkformat (files, device):
     """
     import os.path
     import re
-    ext = { 1:'.csv', 2:'.\d{3}',  3:'.csv', 4:'.txt', 5:'.lvm', 6:'.mat' } #2:'.txt',
+    ext = { 1:'.csv', 2:'(.\d{3}|.txt)',  3:'.csv', 4:'.txt', 5:'.lvm', 6:'.mat' } #2:'.txt',
     for file in files:
         extension = os.path.splitext(file)[-1]
         if not re.match(ext[device], extension):
@@ -238,7 +238,8 @@ def _read_ssbox(files, unit, axes):
     except UnboundLocalError:
         import warnings
         warnings.warn("File with set parameters not found, used fs=80, please, input data_range", UserWarning)
-        fs = 80
+        # fs = 80
+        fs = int(input('fs = '))
         data_range = int(input('data_range = '))
     
     bits = 16;      # bits
@@ -247,10 +248,10 @@ def _read_ssbox(files, unit, axes):
     data = {}
     if unit == 'g':
         data1 = [np.fromfile(file, dtype=dt) for file in files]
-        vibration = pd.DataFrame(np.concatenate(data1)).reset_index(drop=True)
+        vibration = pd.DataFrame(np.concatenate(data1)).reset_index(drop=True) / (2**bits /(2*data_range))*9.81523
         for ax in axes:
-            data[ax] = (vibration.loc[axes.index(ax)::3,:].reset_index(drop=True)
-                        /(2**bits /(2*data_range))*9.81523)
+            data[ax] = vibration.iloc[axes.index(ax)::3,0].reset_index(drop=True)
+                        
 
     elif unit == 'strain':
         data1 = [pd.read_table(file, header=None, sep=',', on_bad_lines='warn') for file in files]
