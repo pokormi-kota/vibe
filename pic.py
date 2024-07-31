@@ -28,7 +28,8 @@ sys.path.append(os.path.dirname(SCRIPT_DIR))
 from vibe.read_signal import val2db
 
 
-def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines=['C','D','E','F','G'], name=f'statvc', table=True, title=True, save=False):
+def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines=['C','D','E','F','G'],
+            name=f'statvc', table=True, title='direction', save=False):
     """_summary_
 
     Parameters
@@ -45,18 +46,20 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
         'd' - displacements (mkm)
     unit: {'dB', other}, optional
         Units of input data. Necessary for correct conversion of values if input is in dB or absolute units, by default 'abs'.
-    F : _type_
-        _description_
-    fraction : str, optional
-        _description_, by default '1/3'
+    F : list
+        `fraction` octave-band intervals mean frequencies.
+    fraction : {'1/1', '1/3'}, optional
+        Octave band width, by default '1/3'
     showvc : bool, optional
-        _description_, by default True
+        Show VC lines, by default True
     vclines : list, optional
-        _description_, by default ['C','D','E','F','G']
-    name : _type_, optional
-        _description_, by default f'statvc'
+        VC (Vibration Criteria) curves according to Colin Gordon, by default ['C','D','E','F','G']
+    name : str, optional
+        Name of the file to be saved, by default f'statvc'
     table : bool, optional
-        _description_, by default True
+        Show a table with values plotted, by default True
+    title : {'direction', 'point'}, optional
+        If 'direction' title of each picture is f"Направление {ax}". If 'point' title os f"Точка {ax}". Else no title added.
     save : bool, optional
         Whether the picture should be saved, by default False
         
@@ -138,8 +141,13 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
 
         axs.legend(loc="lower left", ncol=6, fontsize=10, frameon=True)
         axs.grid(visible='True', which='both', axis='both', ls='--')
-        if title == True:
+        if title == 'point':
+            axs.set_title(f'$ Точка\ {ax} $', fontsize=14)
+        elif title == 'direction':
             axs.set_title(f'$ Направление\ {ax} $', fontsize=14)
+        elif title == 'channel':
+            axs.set_title(f'$ Канал\ {ax} $', fontsize=14)
+            
         axs.set_xlabel(f'$ Среднегеометрическая\ частота\ {fraction}\ октавной\ полосы,\ Гц $', fontsize=14)
 
         if res_param == 'v':
@@ -154,6 +162,8 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
             axs.set_ylabel('$ Уровень\ виброскорости,\ дБ $', fontsize=14)
         elif res_param == 'La':
             axs.set_ylabel('$ Уровень\ виброускорения ,\ дБ $', fontsize=14)
+        elif res_param == 'LA':
+            axs.set_ylabel('$ Уровень\ звукового\ давления ,\ дБ $', fontsize=14)
         
         if table:
             spec = fig.add_gridspec(ncols=1, nrows=2, height_ratios=[8,1])
@@ -187,11 +197,14 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
             elif res_param == 'La':
                 axs1.set_title(f'$ Уровень\ виброускорения\ (дБ)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
                                 fontsize=12, y=0)
+            elif res_param == 'LA':
+                axs1.set_title(f'$ Уровень\ звукового\ давления\ (дБ)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                                fontsize=12, y=0)
 
         if save:
             plt.savefig(f'{name}_{ax}.png', dpi=300, bbox_inches='tight')
 
-def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.5, 63, 125, 250], name=f'bands', save=False):
+def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.5, 63, 125, 250], title='direction', name=f'bands', save=False):
     """_summary_
 
     Parameters
@@ -208,6 +221,8 @@ def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.
         _description_, by default 1
     F : list, optional
         _description_, by default [8, 16, 31.5, 63, 125, 250]
+    title : {'direction', 'point'}, optional
+        If 'direction' title of each picture is f"Направление {ax}". If 'point' title os f"Точка {ax}". Else no title added.
     name : _type_, optional
         _description_, by default f'bands'
     save : bool, optional
@@ -252,7 +267,7 @@ def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.
             
         elif res_param == 'Lv':
             for i in F:
-                y = val2db(vel[ax].loc[0:, i].rolling(rms,center=True).mean() * 1e-6 , 'v')
+                y = val2db(vel[ax].loc[0:, i].rolling(rms,center=True).mean() * 1e-6 , param='v')
                 axs.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
             axs.set_ylabel('$ Уровень\ виброскорости,\ дБ $', fontsize=12)
             
@@ -269,7 +284,12 @@ def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.
             axs.set_ylabel('$ Виброскорость,\ м/с $', fontsize=12)
             
             
-        axs.set_title(f'$ Направление\ {ax} $', fontsize=12)
+        if title == 'point':
+            axs.set_title(f'$ Точка\ {ax} $', fontsize=12)
+        elif title == 'direction':
+            axs.set_title(f'$ Направление\ {ax} $', fontsize=12)
+        elif title == 'channel':
+            axs.set_title(f'$ Канал\ {ax} $', fontsize=12)
         axs.set_xlabel('$ Время,\ с $', fontsize=12)
         axs.legend(bbox_to_anchor=(1, 1), loc='upper left', fontsize=10, frameon=True)
         axs.grid(visible='True', which='both', axis='both', ls='--')
@@ -469,7 +489,7 @@ def signalhist(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False
     if save:
         plt.savefig(f'{name}.png', dpi=300)
 
-def signalpic(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False):
+def signalpic(data, fs, unit, axes=['X','Y','Z'], title='direction', name='signalhist', save=False):
     """_summary_
 
     Parameters
@@ -482,6 +502,8 @@ def signalpic(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False)
         _description_
     axes : list, optional
         _description_, by default ['X','Y','Z']
+    title : {'direction', 'point'}, optional
+        If 'direction' title of each picture is f"Направление {ax}". If 'point' title os f"Точка {ax}". Else no title added.
     name : str, optional
         _description_, by default 'signalhist'
     save : bool, optional
@@ -501,7 +523,14 @@ def signalpic(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False)
 
         axs.plot(x, y, linewidth=0.5, label='$ Сигнал $')
 
-        axs.set_title(f'$ Направление\ {ax} $', fontsize=14)
+        if title == 'point':
+            axs.set_title(f'$ Точка\ {ax} $', fontsize=14)
+        elif title == 'direction':
+            axs.set_title(f'$ Направление\ {ax} $', fontsize=14)
+        elif title == 'channel':
+            axs.set_title(f'$ Канал\ {ax} $', fontsize=14)
+            
+            
         axs.set_xlabel('$ Время,\ с $', fontsize=14)
         if unit == 'm/s':
             axs.set_ylabel('$ Виброскорость,\ м/с $', fontsize=14)
@@ -509,6 +538,8 @@ def signalpic(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False)
             axs.set_ylabel('$ Виброскорость,\ мм/с $', fontsize=14)
         elif unit == 'mm':
             axs.set_ylabel('$ Виброперемещение,\ мм $', fontsize=14)
+        elif unit == 'm':
+            axs.set_ylabel('$ Виброперемещение,\ м $', fontsize=14)
         else:
             axs.set_ylabel('$ Виброускорение,\ м/с{^2} $', fontsize=14)
         # axs.legend(bbox_to_anchor=(1, 1), loc='upper left', fontsize=10, frameon=True)
