@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(SCRIPT_DIR))
 from vibe.read_signal import val2db
 
 
-def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, specLabels=None, fraction='1/3', 
+def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, specLabels=None, fraction='1/3', title='direction', 
                 init_rows=3, init_cols=1, name='stat_results', num_format='0.00', width=21):    
     """Saves (statistics) report for protocol in .xlsx format that fits a standard (A4, vertical) page.
 
@@ -135,7 +135,7 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
         worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
                           f'Значения виброперемещений, мкм в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                           merge_format)
-    elif res_param == ('La' or 'LA'):
+    elif res_param == 'La':
         worksheet.merge_range(0, init_cols, 0, init_cols-1 + cols_byline_num*n_stats,
                               f'Уровни виброускорений, дБ в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                               merge_format)
@@ -143,6 +143,11 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
         worksheet.merge_range(0, init_cols, 0, init_cols-1 + cols_byline_num*n_stats,
                               f'Уровни виброскоростей, дБ в {fraction} октавной полосе со среднегеометрической частотой, Гц',
                               merge_format)
+    elif res_param == 'LA':
+        worksheet.merge_range(0, init_cols, 0, init_cols-1 + cols_byline_num*n_stats,
+                              f'Уровни звукового давления, дБ в {fraction} октавной полосе со среднегеометрической частотой, Гц',
+                              merge_format)    
+    
     if n_stats == 2:
         for f in range(0, cols_byline_num):
                 worksheet.write_rich_string(1,
@@ -153,6 +158,13 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
                                             f*n_stats+init_cols+1,
                                             cell_format, f'{res}',
                                             subscript, f'{subs[1]}', cell_format)
+    if title == 'point':
+        ax_title = 'Точка'
+    elif title == 'direction':
+        ax_title = 'Ось'
+    elif title == 'channel':
+        ax_title = 'Канал'
+            
     for ax in axes:
         a = axes.index(ax)
         # Convert to required units
@@ -167,17 +179,17 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
                 # stats_[i][ax] = stats[i][ax]
             else:
                 stats_[i][ax] = stats[i][ax]
-
+        
         worksheet.merge_range(init_rows-1+a + a*(stats[0][ax].shape[0]+1)*split,
                               init_cols, 
                               init_rows-1+a + a*(stats[0][ax].shape[0]+1)*split,
                               init_cols+cols_byline_num*n_stats-1, 
-                              f'Ось {ax}', merge_format)
+                              f'{ax_title} {ax}', merge_format)
         
         for i in range(split):
             # left (init) columns headings
-            worksheet.write((init_rows+a + i*(stats[0][ax].shape[0]+1) +
-                              a*(stats[0][ax].shape[0]+1)*split),
+            worksheet.write((init_rows+a + i*(stats[0][ax].shape[0]+1) 
+                             + a*(stats[0][ax].shape[0]+1)*split),
                              0,
                              'Показатель', cell_format)
             if spec != None:
@@ -187,7 +199,7 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
                              s,
                              f'{specLabels[s]}', cell_format)
             
-                            
+            
             # fill in left (init) columns
             for param in stats[0][ax].index:
                 index_loc = stats[0][ax].index.get_loc(param)   # row number by its name
@@ -201,7 +213,7 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
                             worksheet.write(((init_rows+1+a + i*(stats[0][ax].shape[0]+1)
                                             + a*(stats[0][ax].shape[0]+1)*split)+index_loc),
                                             s+1,
-                                            f'{spec[s][ax].loc[index_loc,63]}', num_format)
+                                            f'{spec[s][ax].loc[index_loc,31.5]}', num_format)
                         elif type(spec[s]) == list:
                             worksheet.write(((init_rows+1+a + i*(stats[0][ax].shape[0]+1)
                                             + a*(stats[0][ax].shape[0]+1)*split)+index_loc),
@@ -300,7 +312,7 @@ def trains_report(params, train_daytime, res_param, unit='abs', stats=[], fracti
             'font_name': 'Times New Roman',
             'font_size': 9,
             'border': 7})
-        
+    
     cell_format = workbook.add_format({
         'font_name': 'Times New Roman',
         'font_size': 9,
@@ -419,9 +431,9 @@ def trains_report(params, train_daytime, res_param, unit='abs', stats=[], fracti
             worksheet.write((3+num), 0,
                            f'{num}', cell_format)
             worksheet.write((3+num), 1,
-                            f'{train_daytime[ax].loc[i,63]}', cell_format)
+                            f'{train_daytime[ax].loc[i,31.5]}', cell_format)
             worksheet.write((3+num), 2,
-                            f'{v_train_time[ax].loc[i,63]}', cell_format)
+                            f'{v_train_time[ax].loc[i,31.5]}', cell_format)
 
             for j in range(len(F)):
                 worksheet.write((3+num), init_cols+ j*n_stats, 
@@ -648,7 +660,7 @@ def load_my_data(file, Fv, nsplits=2, paramnum=1, nrows=6, axes=['X','Y','Z']):
         _description_
     nsplits : int, optional
         _description_, by default 2
-    paramnum : int, optional
+    paramnum : int or range, optional
         _description_, by default 1
     nrows : int, optional
         _description_, by default 6
@@ -676,6 +688,10 @@ def load_my_data(file, Fv, nsplits=2, paramnum=1, nrows=6, axes=['X','Y','Z']):
                                         )
                           )
         data[ax] = pd.concat(dfs, axis=1).iloc[paramnum,:]
-        data[ax].columns = Fv
+        if type(paramnum)==int:
+            data[ax].index = Fv
+        else:
+            data[ax].columns = Fv
+        # data[ax].columns = Fv
     return data
 
