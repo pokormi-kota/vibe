@@ -21,7 +21,7 @@ from vibe.read_signal import sig_avg
 
 
 def octaveband(data, fs, unit, F, fraction=3, axes=['X','Y','Z'], time=1, chunksize=None):
-    """Makes octave filtering of a signal acording to ANSI and averages it, by dafault to 1 sec.
+    """Makes octave filtering of a signal acording to ANSI s1.11-2004 && IEC 61260-1-2014 and averages it, by dafault to 1 sec.
 
     Parameters
     ----------
@@ -123,15 +123,20 @@ def statistics(data, res_param, F, stat_params):
         Frequencies to include in results, must be in data columns names.
     stat_params : list of int or str
         List of numbers or names of the parameters.
-        [1 : Max,
-        2 : Mean,
-        3 : RMS,
-        4 : Mean + Sigma,
-        5 : Mean + 2 Sigma,
-        6 : Mean + 1.645 Sigma,
-        7 : Mean + 2.33 Sigma,
-        8 : L95,
-        9 : L99 ]
+        1 : 'Max', - maximum values;
+        2 : 'Mean', - mean values;
+        3 : 'RMS', - root mean squared values;
+        4 : 'Mean+Sigma', - mathematical expectation plus 1 standard deviation of the values. 
+        Corresponds to an extended one-sided uncertainty with a confidence level of 95.0%;
+        5 : 'Mean+2Sigma', - mathematical expectation plus 2 standard deviation of the values.
+        Corresponds to an extended one-sided uncertainty with a confidence level of 95.0%;
+        6 : 'Mean+1.645Sigma', - mathematical expectation plus 1.645 standard deviation of the values. 
+        Corresponds to an extended one-sided uncertainty with a confidence level of 95.0%;
+        7 : 'Mean+2.33Sigma', - mathematical expectation plus 2.33 standard deviation of the values. 
+        Corresponds to an extended one-sided uncertainty with a confidence level of 99.0%;
+        8 : 'L95', - actual measurement results with a coverage factor of 95% (percentile);
+        9 : 'L99'  - actual measurement results with a coverage factor of 99% (percentile).
+        By default [1,2,4,5,8,9]
         
     Returns
     -------
@@ -247,7 +252,7 @@ def trains_calc(data, peak_pos, unit='abs', half_interval = 20):
     v_train_time : dict (axes: dataframe)
         
     """
-    "unit - units of data"
+
     axes = list(data)
     F = data[axes[0]].columns
 
