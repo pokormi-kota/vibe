@@ -105,7 +105,7 @@ def _checkformat (files, device):
     """
     import os.path
     import re
-    ext = { 1:'.csv', 2:'(.\d{3}|.txt)',  3:'.csv', 4:'.txt', 5:'.lvm', 6:'.mat' } #2:'.txt',
+    ext = { 1:'.csv', 2:'(.\d|.\d{3}|.txt)',  3:'.csv', 4:'.txt', 5:'.lvm', 6:'.mat' } #2:'.txt',
     for file in files:
         extension = os.path.splitext(file)[-1]
         if not re.match(ext[device], extension):
@@ -124,7 +124,7 @@ def cut_edges (data, cut):
     cut : list of two int or int
         List with two values - the first refers to a number of values to delete in the beginning 
         and the second is the number of values to delete at the end. If int provided then 
-        deletes equal number of values 
+        deletes equal number of values.
 
     Returns
     -------
@@ -146,7 +146,10 @@ def cut_edges (data, cut):
     """
     if type(cut) == int:
         cut = [cut, cut]
-    data = data.iloc[cut[0] : -1*cut[1]]
+    if cut[1] == 0:
+        data = data.iloc[cut[0] :]
+    else:
+        data = data.iloc[cut[0] : -1*cut[1]]
     return data.reset_index(drop=True)
 
 

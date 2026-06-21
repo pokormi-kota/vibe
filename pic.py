@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter, NullFormatter, FuncFormatter
 from matplotlib import rcParams
 
-plt.style.use('seaborn-whitegrid')
+plt.style.use('seaborn-v0_8-whitegrid')
 rcParams['figure.facecolor'] = 'white'
 rcParams['savefig.facecolor'] = 'white'
 rcParams['font.family'] = 'serif'
@@ -59,7 +59,8 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
     table : bool, optional
         Show a table with values plotted, by default True
     title : {'direction', 'point'}, optional
-        If 'direction' title of each picture is f"Направление {ax}". If 'point' title os f"Точка {ax}". Else no title added.
+        If 'direction' title of each picture is f"Направление {ax}". If 'point' title of each picture is f"Точка {ax}". 
+        If 'channel' title of each picture is f"Канал {ax}". Else no title added.
     save : bool, optional
         Whether the picture should be saved, by default False
         
@@ -142,28 +143,32 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
         axs.legend(loc="lower left", ncol=6, fontsize=10, frameon=True)
         axs.grid(visible='True', which='both', axis='both', ls='--')
         if title == 'point':
-            axs.set_title(f'$ Точка\ {ax} $', fontsize=14)
+            axs.set_title(f'Точка {ax}', fontsize=14)
         elif title == 'direction':
-            axs.set_title(f'$ Направление\ {ax} $', fontsize=14)
+            axs.set_title(f'Направление {ax}', fontsize=14)
         elif title == 'channel':
-            axs.set_title(f'$ Канал\ {ax} $', fontsize=14)
+            axs.set_title(f'Канал {ax}', fontsize=14)
+        elif title == None:
+            pass
+        elif (type(title) == list) and (len(title) == len(axes)):
+            axs.set_title(f'{title[axes.index(ax)]}', fontsize=14)
             
-        axs.set_xlabel(f'$ Среднегеометрическая\ частота\ {fraction}\ октавной\ полосы,\ Гц $', fontsize=14)
+        axs.set_xlabel(f'Среднегеометрическая частота {fraction} октавной полосы, Гц', fontsize=14)
 
         if res_param == 'v':
-            axs.set_ylabel('$ Виброскорость,\ мкм/с $', fontsize=14)
+            axs.set_ylabel('Виброскорость, мкм/с', fontsize=14)
         elif res_param == 'mv':
-            axs.set_ylabel('$ Виброскорость,\ м/с $', fontsize=14)
+            axs.set_ylabel('Виброскорость, м/с', fontsize=14)
         elif res_param == 'a':
-            axs.set_ylabel('$ Виброускорение,\ м/с^{2} $', fontsize=14)
+            axs.set_ylabel('Виброускорение, $ м/с^{2} $', fontsize=14)
         elif res_param == 'd':
-            axs.set_ylabel('$ Виброперемещение,\ мкм $', fontsize=14)
+            axs.set_ylabel('Виброперемещение, мкм', fontsize=14)
         elif res_param == 'Lv':
-            axs.set_ylabel('$ Уровень\ виброскорости,\ дБ $', fontsize=14)
+            axs.set_ylabel('Уровень виброскорости, дБ', fontsize=14)
         elif res_param == 'La':
-            axs.set_ylabel('$ Уровень\ виброускорения ,\ дБ $', fontsize=14)
+            axs.set_ylabel('Уровень виброускорения, дБ', fontsize=14)
         elif res_param == 'LA':
-            axs.set_ylabel('$ Уровень\ звукового\ давления ,\ дБ $', fontsize=14)
+            axs.set_ylabel('Уровень звукового давления, дБ', fontsize=14)
         
         if table:
             spec = fig.add_gridspec(ncols=1, nrows=2, height_ratios=[8,1])
@@ -172,7 +177,7 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
             axs1.set_position([l,-h,w,h], which='both')
             axs1.axis('off')
 
-            the_table = axs1.table(cellText=np.vstack([stat_[ax].columns, stat_[ax].applymap('{:,.3f}'.format).values]),
+            the_table = axs1.table(cellText=np.vstack([stat_[ax].columns, stat_[ax].map('{:,.3f}'.format).values]),
                                     rowLabels = np.array(rowLabels),
                                     colWidths = [(1 + 0.2)/stat_[ax].shape[1]] * stat_[ax].shape[1],
                                     in_layout=True, loc='bottom'
@@ -180,25 +185,25 @@ def statpic(stat, F, res_param, unit='abs', fraction='1/3', showvc=True, vclines
             the_table.auto_set_font_size(False)
             the_table.set_fontsize(6)
             if res_param == 'v':
-                axs1.set_title(f'$ Виброскорость\ (мкм/с)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Виброскорость (мкм/с) в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
             elif res_param == 'mv':
-                axs1.set_title(f'$ Виброскорость\ (м/с)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Виброскорость (м/с) в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
             elif res_param == 'a':
-                axs1.set_title(f'$ Виброускорение\ (м/с^{2})\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Виброускорение $ (м/с^{2}) $ в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
             elif res_param == 'd':
-                axs1.set_title(f'$ Виброперемещение\ (мкм)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Виброперемещение (мкм) в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
             elif res_param == 'Lv':
-                axs1.set_title(f'$ Уровень\ виброскорости\ (дБ)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Уровень виброскорости (дБ) в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
             elif res_param == 'La':
-                axs1.set_title(f'$ Уровень\ виброускорения\ (дБ)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Уровень виброускорения (дБ) в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
             elif res_param == 'LA':
-                axs1.set_title(f'$ Уровень\ звукового\ давления\ (дБ)\ в\ {fraction}\ октавной\ полосе\ со\ среднегеометрической\ частотой\ (Гц) $', 
+                axs1.set_title(f'Уровень звукового давления (дБ) в {fraction} октавной полосе со среднегеометрической частотой (Гц)', 
                                 fontsize=12, y=0)
 
         if save:
@@ -221,12 +226,13 @@ def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.
         _description_, by default 1
     F : list, optional
         _description_, by default [8, 16, 31.5, 63, 125, 250]
-    title : {'direction', 'point'}, optional
-        If 'direction' title of each picture is f"Направление {ax}". If 'point' title os f"Точка {ax}". Else no title added.
-    name : _type_, optional
-        _description_, by default f'bands'
+    title : {'direction', 'point', channel'}, optional
+        If 'direction' title of each picture is f"Направление {ax}". If 'point' title of each picture is f"Точка {ax}". 
+        If 'channel' title of each picture is f"Канал {ax}".  Else no title added.
+    name : str, optional
+        The name of picture to be saved, by default f'bands'. Only symbols allowed in operating system could be used.
     save : bool, optional
-        _description_, by default False
+        Save the picture or not, by default False. The format is .png
         
     Returns
     -------
@@ -256,48 +262,52 @@ def bandspic(acc=None, vel=None, res_param='v', unit='abs', rms=1, F=[8, 16, 31.
                     y = acc[ax].loc[0:, i].rolling(rms,center=True).mean()
                 else:
                     y = val2db(acc[ax].loc[0:, i].rolling(rms,center=True).mean(), 'a')
-                axs.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
-            axs.set_ylabel('$ Уровень\ виброускорения,\ дБ $', fontsize=12)
+                axs.plot(x, y, linewidth=0.5, label=f'Частота {i} Гц')
+            axs.set_ylabel('Уровень виброускорения, дБ', fontsize=12)
             
         elif res_param == 'a':
             for i in F:
                 y = acc[ax].loc[0:, i].rolling(rms,center=True).mean()
                 axs.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
-            axs.set_ylabel('$ Виброускорение,\ м/с^{2} $', fontsize=12)
+            axs.set_ylabel('Виброускорение, $ м/с^{2} $', fontsize=12)
             
         elif res_param == 'Lv':
             for i in F:
                 y = val2db(vel[ax].loc[0:, i].rolling(rms,center=True).mean() * 1e-6 , param='v')
-                axs.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
-            axs.set_ylabel('$ Уровень\ виброскорости,\ дБ $', fontsize=12)
+                axs.plot(x, y, linewidth=0.5, label=f'Частота {i} Гц')
+            axs.set_ylabel('Уровень виброскорости, дБ', fontsize=12)
             
         elif res_param == 'v':
             for i in F:
                 y = vel[ax].loc[:, i].rolling(rms,center=True).mean()
-                axs.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
-            axs.set_ylabel('$ Виброскорость,\ мкм/с $', fontsize=12)
+                axs.plot(x, y, linewidth=0.5, label=f'Частота {i} Гц')
+            axs.set_ylabel('Виброскорость, мкм/с', fontsize=12)
             
         elif res_param == 'vm':
             for i in F:
                 y = vel[ax].loc[:, i].rolling(rms,center=True).mean() * 1e-6
-                axs.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
-            axs.set_ylabel('$ Виброскорость,\ м/с $', fontsize=12)
+                axs.plot(x, y, linewidth=0.5, label=f'Частота {i} Гц')
+            axs.set_ylabel('Виброскорость, м/с', fontsize=12)
             
             
         if title == 'point':
-            axs.set_title(f'$ Точка\ {ax} $', fontsize=12)
+            axs.set_title(f'Точка {ax}', fontsize=12)
         elif title == 'direction':
-            axs.set_title(f'$ Направление\ {ax} $', fontsize=12)
+            axs.set_title(f'Направление {ax}', fontsize=12)
         elif title == 'channel':
-            axs.set_title(f'$ Канал\ {ax} $', fontsize=12)
-        axs.set_xlabel('$ Время,\ с $', fontsize=12)
+            axs.set_title(f'Канал {ax}', fontsize=12)
+        elif title == None:
+            pass
+        elif (type(title) == list) and (len(title) == len(axes)):
+            axs.set_title(f'{title[axes.index(ax)]}', fontsize=12)
+        axs.set_xlabel('Время, с', fontsize=12)
         axs.legend(bbox_to_anchor=(1, 1), loc='upper left', fontsize=10, frameon=True)
         axs.grid(visible='True', which='both', axis='both', ls='--')
         
         if save:
             plt.savefig(f'{name}_{ax}_{res_param}.png', dpi=300)
 
-def bandshist(acc=None, vel=None, res_param='v', F=None, name=f'bands', save=False):
+def bandshist(acc=None, vel=None, res_param='v', title='direction', F=None, name=f'bands', save=False):
     """_summary_
 
     Parameters
@@ -341,41 +351,50 @@ def bandshist(acc=None, vel=None, res_param='v', F=None, name=f'bands', save=Fal
     #     axsLeft.vlines(dinner_time, 0, vel1[ax].max().max(), ls='--', linewidth=1, colors='k')
     #     axsLeft.text(dinner_time, vel1[ax].max().max(), f'$ Приостановка\ СМР $', fontsize=10, rotation='vertical',
     #                  horizontalalignment='left', verticalalignment='top')
-
-        axsLeft.set_title(f'$ Направление\ {ax} $', fontsize=12)
-        axsLeft.set_xlabel('$ Время,\ с $', fontsize=12)
+        
+        if title == 'point':
+            axsLeft.set_title(f'Точка {ax}', fontsize=12)
+        elif title == 'direction':
+            axsLeft.set_title(f'Направление {ax}', fontsize=12)
+        elif title == 'channel':
+            axsLeft.set_title(f'Канал {ax}', fontsize=12)
+        elif title == None:
+            pass
+        elif (type(title) == list) and (len(title) == len(axes)):
+            axsLeft.set_title(f'{title[axes.index(ax)]}', fontsize=12)
+        axsLeft.set_xlabel('Время, с', fontsize=12)
         if res_param == 'La':
             for i in F:
                 y = val2db(acc[ax].loc[:, i])
-                axsLeft.plot(x, y, linewidth=0.5, label=f'$ {i}\ Гц $')
-            axsLeft.set_ylabel('$ Уровень\ виброускорения,\ дБ $', fontsize=12)
+                axsLeft.plot(x, y, linewidth=0.5, label=f'{i} Гц')
+            axsLeft.set_ylabel('Уровень виброускорения, дБ', fontsize=12)
 
         elif res_param == 'a':
             for i in F:
                 y = acc[ax].loc[:, i]
-                axsLeft.plot(x, y, linewidth=0.5, label=f'$ {i}\ Гц $')
-            axsLeft.set_ylabel('$ Виброускорение,\ м/с^{2} $', fontsize=12)
+                axsLeft.plot(x, y, linewidth=0.5, label=f'{i} Гц')
+            axsLeft.set_ylabel('Виброускорение, $ м/с^{2} $', fontsize=12)
 
         elif res_param == 'Lv':
             for i in F:
                 y = val2db(vel[ax].loc[:, i] * 1e-6, param='v')
-                axsLeft.plot(x, y, linewidth=0.5, label=f'$ {i}\ Гц $')
-            axsLeft.set_ylabel('$ Уровень\ виброскорости,\ дБ $', fontsize=12)
+                axsLeft.plot(x, y, linewidth=0.5, label=f'{i} Гц')
+            axsLeft.set_ylabel('Уровень виброскорости, дБ', fontsize=12)
 
         elif res_param == 'v':
             for i in F:
                 y = vel[ax].loc[:, i]
-                axsLeft.plot(x, y, linewidth=0.5, label=f'$ {i}\ Гц $')
-            axsLeft.set_ylabel('$ Виброскорость,\ мкм/с $', fontsize=12)
+                axsLeft.plot(x, y, linewidth=0.5, label=f'{i} Гц')
+            axsLeft.set_ylabel('Виброскорость, мкм/с', fontsize=12)
 
         elif res_param == 'vm':
             for i in F:
                 y = vel[ax].loc[:, i] * 1e-6
-                axsLeft.plot(x, y, linewidth=0.5, label=f'$ Частота\ {i}\ Гц $')
-            axsLeft.set_ylabel('$ Виброскорость,\ м/с $', fontsize=12)
+                axsLeft.plot(x, y, linewidth=0.5, label=f'{i} Гц')
+            axsLeft.set_ylabel('Виброскорость, м/с', fontsize=12)
         
         leg = axsLeft.legend(loc='best', fontsize=8, frameon=True)
-        for legobj in leg.legendHandles:
+        for legobj in leg.legend_handles:
             legobj.set_linewidth(1.0)
         axsLeft.grid(visible='True', which='both', axis='both', ls='--')
         
@@ -383,31 +402,31 @@ def bandshist(acc=None, vel=None, res_param='v', F=None, name=f'bands', save=Fal
         
         for axs, f in zip(axsRight.flat, F):
 
-            axs.set_title(f'$ {f}\ Гц $', fontsize=10)
+            axs.set_title(f'{f} Гц', fontsize=10)
             if res_param == 'La':
                 y = val2db(acc[ax].loc[:, i], param='a')
-                axs.set_xlabel('$ Уровень\ виброускорения,\ дБ $', fontsize=8)
+                axs.set_xlabel('Уровень виброускорения, дБ', fontsize=8)
             elif res_param == 'a':
                 y = acc[ax].loc[:, f]
-                axs.set_xlabel('$ Виброускорение,\ м/с^{2} $', fontsize=8)
+                axs.set_xlabel('Виброускорение, $ м/с^{2} $', fontsize=8)
             elif res_param == 'Lv':
                 y = val2db(vel[ax].loc[:, i] * 1e-6, param='v')
-                axs.set_xlabel('$ Уровень\ виброскорости,\ дБ $', fontsize=8)
+                axs.set_xlabel('Уровень виброскорости, дБ', fontsize=8)
             elif res_param == 'v':
                 y = vel[ax].loc[:, f]
-                axs.set_xlabel('$ Виброскорость,\ мкм/с $', fontsize=8)
+                axs.set_xlabel('Виброскорость, мкм/с', fontsize=8)
 
             axs.hist(y, bins=50, histtype='bar', density=True, log=True,
                     color=[f'C{F.index(f)}'])
 
             axs.grid(visible='True', which='both', axis='both', ls='--')
             axs.tick_params(axis='both', which='major', labelsize=6)
-            axs.set_ylabel('$ Плотность\ вероятности $', fontsize=8)
+            axs.set_ylabel('Плотность вероятности', fontsize=8)
         
         if save:
             plt.savefig(f'{name}_{ax}_{res_param}.png', dpi=300)
 
-def signalhist(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False):
+def signalhist(data, fs, unit, axes=['X','Y','Z'], title='direction', name='signalhist', save=False):
     """_summary_
 
     Parameters
@@ -436,8 +455,12 @@ def signalhist(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False
 
     fig = plt.figure(constrained_layout=True, figsize=(20, 12))
     subfigs = fig.subfigures(1, 2, wspace=0.07)
-    axsLeft = subfigs[0].subplots(1, len(axes))
-    axsRight = subfigs[1].subplots(2, len(axes), gridspec_kw={'height_ratios': [2, 1], 'hspace': 0.05})
+    if len(axes) > 1:
+        axsLeft = subfigs[0].subplots(1, len(axes))
+        axsRight = subfigs[1].subplots(2, len(axes), gridspec_kw={'height_ratios': [2, 1], 'hspace': 0.05})
+    else:
+        axsLeft = [subfigs[0].subplots()]
+        axsRight = subfigs[1].subplots(2, 1, gridspec_kw={'height_ratios': [2, 1], 'hspace': 0.05})
 
     for ax in axes:
         i = axes.index(ax)
@@ -451,40 +474,76 @@ def signalhist(data, fs, unit, axes=['X','Y','Z'], name='signalhist', save=False
     #     axsLeft[i].text(y.max(), dinner_time, f'$ Приостановка\ СМР $', fontsize=10,
     #                      horizontalalignment='right', verticalalignment='top')
         axsLeft[i].invert_yaxis()
-        axsLeft[i].set_title(f'$ Направление\ {ax} $', fontsize=14)
+        if title == 'point':
+            axsLeft[i].set_title(f'Точка {ax}', fontsize=14)
+        elif title == 'direction':
+            axsLeft[i].set_title(f'Направление {ax}', fontsize=14)
+        elif title == 'channel':
+            axsLeft[i].set_title(f'Канал {ax}', fontsize=14)
+        elif title == None:
+            pass
+        elif (type(title) == list) and (len(title) == len(axes)):
+            axsLeft[i].set_title(f'{title[i]}', fontsize=14)
         axsLeft[i].xaxis.tick_top()
         axsLeft[i].xaxis.set_label_position('top')
         if unit == 'm/s':   # ZetLab
-            axsLeft[i].set_xlabel('$ Виброскорость,\ м/с $', fontsize=14)
+            axsLeft[i].set_xlabel('Виброскорость, м/с', fontsize=14)
         else:
-            axsLeft[i].set_xlabel('$ Виброускорение,\ м/с{^2} $', fontsize=14)
+            axsLeft[i].set_xlabel('Виброускорение, $ м/с{^2} $', fontsize=14)
         axsLeft[i].grid(visible='True', which='both', axis='both', ls='--')
-        axsLeft[0].set_ylabel('$ Время,\ с $', fontsize=14)
+        axsLeft[0].set_ylabel('Время, с', fontsize=14)
         
-        # Plot histograms
-        axsRight[0,i].hist(abs(data[ax]), bins=25, histtype='bar', density=True, stacked=True, log=True, label=f'$ {ax} $')
+        if len(axes) > 1:
+            # Plot histograms
+            axsRight[0,i].hist(abs(data[ax]), bins=25, histtype='bar', density=True, stacked=True, log=True, label=f'$ {ax} $')
 
-        axsRight[0,i].set_title(f'$ Направление\ {ax} $', fontsize=14)
-        if unit == 'm/s':
-            axsRight[0,i].set_xlabel('$ Виброскорость,\ м/с $', fontsize=14)
-        elif unit == 'mm/s':
-            axsRight[0,i].set_xlabel('$ Виброскорость,\ мм/с $', fontsize=14)
+            axsRight[0,i].set_title(f'Направление {ax}', fontsize=14)
+            if unit == 'm/s':
+                axsRight[0,i].set_xlabel('Виброскорость, м/с', fontsize=14)
+            elif unit == 'mm/s':
+                axsRight[0,i].set_xlabel('Виброскорость, мм/с', fontsize=14)
+            else:
+                axsRight[0,i].set_xlabel('Виброускорение, $ м/с^{2} $', fontsize=14)
+            axsRight[0,i].grid(visible='True', which='both', axis='both', ls='--')
+            axsRight[0,0].set_ylabel('Плостность вероятности', fontsize=14)
+            
+            # Plot tables with quantiles
+            content = []
+            for q in quantiles:
+                content.append(abs(data[ax]).quantile(q=q/100))
+            axsRight[1,i].axis('off')
+            axsRight[1,i].table(cellText = [[f'{c:.2e}'] for c in content],
+                                rowLabels = list(map(lambda x: str(x)+' %', quantiles)), 
+                                colLabels = ['Значение']*len(content),
+                                colWidths=[0.5], loc='center', fontsize=14
+                            )
+            axsRight[1,i].set_title(f'Процентиль', fontsize=14, y=0.9)
+            
         else:
-            axsRight[0,i].set_xlabel('$ Виброускорение,\ м/с^{2} $', fontsize=14)
-        axsRight[0,i].grid(visible='True', which='both', axis='both', ls='--')
-        axsRight[0,0].set_ylabel('$ Плостность\ вероятности $', fontsize=14)
-        
-        # Plot tables with quantiles
-        content = []
-        for q in quantiles:
-            content.append(abs(data[ax]).quantile(q=q/100))
-        axsRight[1,i].axis('off')
-        axsRight[1,i].table(cellText = [[f'{c:.2e}'] for c in content],
-                            rowLabels = list(map(lambda x: str(x)+' %', quantiles)), 
-                            colLabels = ['Значение']*len(content),
-                            colWidths=[0.5], loc='center', fontsize=14
-                        )
-        axsRight[1,i].set_title(f'$ Процентиль $', fontsize=14, y=0.9)
+            # Plot histograms
+            axsRight[0].hist(abs(data[ax]), bins=25, histtype='bar', density=True, stacked=True, log=True, label=f'$ {ax} $')
+
+            axsRight[0].set_title(f'Направление {ax}', fontsize=14)
+            if unit == 'm/s':
+                axsRight[0].set_xlabel('Виброскорость, м/с', fontsize=14)
+            elif unit == 'mm/s':
+                axsRight[0].set_xlabel('Виброскорость, мм/с', fontsize=14)
+            else:
+                axsRight[0].set_xlabel('Виброускорение, $ м/с^{2} $', fontsize=14)
+            axsRight[0].grid(visible='True', which='both', axis='both', ls='--')
+            axsRight[0].set_ylabel('Плостность вероятности', fontsize=14)
+            
+            # Plot tables with quantiles
+            content = []
+            for q in quantiles:
+                content.append(abs(data[ax]).quantile(q=q/100))
+            axsRight[1].axis('off')
+            axsRight[1].table(cellText = [[f'{c:.2e}'] for c in content],
+                              rowLabels = list(map(lambda x: str(x)+' %', quantiles)), 
+                              colLabels = ['Значение']*len(content),
+                              colWidths=[0.5], loc='center', fontsize=14
+                              )
+            axsRight[1].set_title(f'Процентиль', fontsize=14, y=0.9)
     
     if save:
         plt.savefig(f'{name}.png', dpi=300)
@@ -524,24 +583,30 @@ def signalpic(data, fs, unit, axes=['X','Y','Z'], title='direction', name='signa
         axs.plot(x, y, linewidth=0.5, label='$ Сигнал $')
 
         if title == 'point':
-            axs.set_title(f'$ Точка\ {ax} $', fontsize=14)
+            axs.set_title(f'Точка {ax}', fontsize=14)
         elif title == 'direction':
-            axs.set_title(f'$ Направление\ {ax} $', fontsize=14)
+            axs.set_title(f'Направление {ax}', fontsize=14)
         elif title == 'channel':
-            axs.set_title(f'$ Канал\ {ax} $', fontsize=14)
+            axs.set_title(f'Канал {ax}', fontsize=14)
+        elif title == None:
+            pass
+        elif (type(title) == list) and (len(title) == len(axes)):
+            axs.set_title(f'{title[axes.index(ax)]}', fontsize=14)
             
             
-        axs.set_xlabel('$ Время,\ с $', fontsize=14)
+        axs.set_xlabel('Время, с', fontsize=14)
         if unit == 'm/s':
-            axs.set_ylabel('$ Виброскорость,\ м/с $', fontsize=14)
+            axs.set_ylabel('Виброскорость, м/с', fontsize=14)
         elif unit == 'mm/s':
-            axs.set_ylabel('$ Виброскорость,\ мм/с $', fontsize=14)
+            axs.set_ylabel('Виброскорость, мм/с', fontsize=14)
         elif unit == 'mm':
-            axs.set_ylabel('$ Виброперемещение,\ мм $', fontsize=14)
+            axs.set_ylabel('Виброперемещение, мм', fontsize=14)
         elif unit == 'm':
-            axs.set_ylabel('$ Виброперемещение,\ м $', fontsize=14)
+            axs.set_ylabel('Виброперемещение, м', fontsize=14)
+        elif unit == 'm/s2*10**-3':
+            axs.set_ylabel('Виброускорение, $ м/с{^2}*10{^-3} $', fontsize=14)
         else:
-            axs.set_ylabel('$ Виброускорение,\ м/с{^2} $', fontsize=14)
+            axs.set_ylabel('Виброускорение, $ м/с{^2} $', fontsize=14)
         # axs.legend(bbox_to_anchor=(1, 1), loc='upper left', fontsize=10, frameon=True)
         axs.grid(visible='True', which='both', axis='both', ls='--')
     

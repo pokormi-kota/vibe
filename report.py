@@ -29,7 +29,7 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
     Parameters
     ----------
     stats : list
-        contains dictionaries (keys = axes) of dataframes (rows = stat params, cols = Freqs)
+        Contains dictionaries (keys = axes) of dataframes (rows = stat params, cols = Freqs)
     res_param : str
         Result units:
         'v' - velocity (mkm/s)
@@ -121,7 +121,7 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
     cols_byline_num = math.ceil(len(F)/split)   # will be actual number of columns from stats in one line 
 
     #  Write headings
-#     worksheet.merge_range(0, 0, init_rows-1, 0, 'Показатель', cell_format)
+    # worksheet.merge_range(0, 0, init_rows-1, 0, 'Показатель', cell_format)
 
     if res_param == 'v':
         worksheet.merge_range(0, init_cols, 0, init_cols-1 +  cols_byline_num *n_stats, 
@@ -179,12 +179,22 @@ def stat_report(stats, res_param='v', unit='abs', subs=['max','eq'], spec=None, 
                 # stats_[i][ax] = stats[i][ax]
             else:
                 stats_[i][ax] = stats[i][ax]
-        
+        if title == 'point':
+            ax_title = f'Точка {ax}'
+        elif title == 'direction':
+            ax_title = f'Ось {ax}'
+        elif title == 'channel':
+            ax_title = f'Канал {ax}'
+        elif title == None:
+            ax_title = ''
+        elif (type(title) == list) and (len(title) == len(axes)):
+            ax_title = f'{title[axes.index(ax)]}'
+
         worksheet.merge_range(init_rows-1+a + a*(stats[0][ax].shape[0]+1)*split,
-                              init_cols, 
-                              init_rows-1+a + a*(stats[0][ax].shape[0]+1)*split,
-                              init_cols+cols_byline_num*n_stats-1, 
-                              f'{ax_title} {ax}', merge_format)
+                            init_cols, 
+                            init_rows-1+a + a*(stats[0][ax].shape[0]+1)*split,
+                            init_cols+cols_byline_num*n_stats-1, 
+                            ax_title, merge_format)
         
         for i in range(split):
             # left (init) columns headings
@@ -460,7 +470,7 @@ def trains_report(params, train_daytime, res_param, unit='abs', stats=[], fracti
 
 def trains_report1(stats, res_param, params, time, train_daytime, fraction='1/3', init_rows=3-1, init_cols=6, name=f'trains'):
     """Saves report with trains for protocol in .xlsx format.
-    Includes train type, railway number and speed.
+    Includes train type, railway number and speed. It was used for one project so far, so needs revision if used again.
 
     Parameters
     ----------
@@ -471,18 +481,18 @@ def trains_report1(stats, res_param, params, time, train_daytime, fraction='1/3'
         'Lv' - velocity levels (dB)
         'a' - acceleration (m/s^2)
         'La' - acceleration levels (dB)
-    params : _type_
+    params : list
         [v_max, v_eq, v_train_time]
     time : dict
-        _description_
+        Duration of train passing for each train and axis. Was detected manually and saved in a separate file, so is not included in `params`
     train_daytime : dict
-        _description_
+        Daytimes of trains passed
     init_rows : int, optional
         number of rows with some headings, by default 3
     init_cols : int, optional
         number of columns with some parameters except stat, by default 1
     name : str, optional
-        '', by default f'trains'
+        Name of the output file, by default f'trains'
     """
 
     workbook = xlsxwriter.Workbook(f'{name}.xlsx', {'strings_to_numbers':  True})
@@ -649,7 +659,8 @@ def trains_report1(stats, res_param, params, time, train_daytime, fraction='1/3'
 
     print(f'Report {name} is saved to: {os.getcwd()}')
 
-def load_my_data(file, Fv, nsplits=2, paramnum=1, nrows=6, axes=['X','Y','Z']):
+
+def load_my_data(file, Fv, nsplits=2, paramnum=1, nrows=6, num_stats=1, init_rows=3, axes=['X','Y','Z']):
     """Read data that was saved by using `report.stat_report` function 
 
     Parameters
@@ -657,41 +668,58 @@ def load_my_data(file, Fv, nsplits=2, paramnum=1, nrows=6, axes=['X','Y','Z']):
     file : str or path
         Input file to read.
     Fv : list
-        _description_
+        List of column names to read.
     nsplits : int, optional
-        _description_, by default 2
+        Number of parts that the data of one axis is split into, by default 2
     paramnum : int or range, optional
-        _description_, by default 1
+        Which parameter(s) to read. Count starts from 0. A list or range can be specified, by default 1
     nrows : int, optional
-        _description_, by default 6
+        Total number of different statistical parameters in the file, by default 6
+    num_stats : int, optional
+        Number of statistical tables merged together, e.g. for peaks and equivalents, by default 1
+    init_rows : int, optional
+        Number of rows with some headings, needed to skip them, by default 3
     axes : list, optional
-        _description_, by default ['X','Y','Z']
+        List of axes to read data for, by default ['X','Y','Z']
 
     Returns
     -------
-    pandas.DataFrame
+    pandas.DataFrame (or dict, depending on pandas version) with columns named as in `Fv` and index with parameter names, e.g. ['Max', 'v_mean']
+    
+    Warnings
+    --------
+    For now only reads the first of Statistical tables if there are several. Additional parameters can be added later to add this functionality. 
+    Also, the function is very specific to the structure of the file created by `report.stat_report` function, so it might not work if the structure is changed.
     """
     data = {}
     for ax in axes:
         dfs = []
         for i in range(nsplits):
-            if i == nsplits:
+            if i == nsplits-1:
                 dfs.append(pd.read_excel(file, header=None, names = None, index_col=0, nrows=nrows, 
-                                         usecols=range(0, math.floor(len(Fv)//nsplits)+1), 
-                                         skiprows=3+(nrows+1)*i+axes.index(ax)*(nsplits*(nrows+1)+1)
+                                         usecols=range(0, math.floor(len(Fv)/nsplits)*num_stats+1), 
+                                         skiprows=init_rows+(nrows+1)*i+axes.index(ax)*(nsplits*(nrows+1)+1)
                                         )
                           )
             else:
                 dfs.append(pd.read_excel(file, header=None, names = None, index_col=0, nrows=nrows, 
-                                         usecols=range(0, math.ceil(len(Fv)//nsplits)+1), 
-                                         skiprows=3+(nrows+1)*i+axes.index(ax)*(nsplits*(nrows+1)+1)
+                                         usecols=range(0, math.ceil(len(Fv)/nsplits)*num_stats+1), 
+                                         skiprows=init_rows+(nrows+1)*i+axes.index(ax)*(nsplits*(nrows+1)+1)
                                         )
                           )
-        data[ax] = pd.concat(dfs, axis=1).iloc[paramnum,:]
+        if num_stats > 1:
+            data[ax] = pd.concat(dfs, axis=1).iloc[paramnum,::num_stats]
+        elif (num_stats == 1) and (nsplits == 1):
+            data[ax] = dfs[0].iloc[paramnum,:]
+        else:
+            data[ax] = pd.concat(dfs, axis=1).iloc[paramnum,:]
+            
+        # For some reason error might occur when trying to assign column names.
+        # Found connection to how pandas treats the data, if it is a DataFrame or Series or dict(!). 
+        # So if error occurs, assign column names to index instead
         if type(paramnum)==int:
             data[ax].index = Fv
         else:
             data[ax].columns = Fv
         # data[ax].columns = Fv
     return data
-

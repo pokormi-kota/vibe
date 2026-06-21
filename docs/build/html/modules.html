@@ -616,9 +616,9 @@ Other input units are up to user’s consideration.</p>
 <dd class="field-even"><dl class="simple">
 <dt><strong>a</strong><span class="classifier">1-D array</span></dt><dd></dd>
 <dt><strong>b</strong><span class="classifier">1-D array</span></dt><dd></dd>
-<dt><strong>rms</strong><span class="classifier"></span></dt><dd></dd>
-<dt><strong>crms</strong><span class="classifier"></span></dt><dd></dd>
-<dt><strong>slope</strong><span class="classifier"></span></dt><dd></dd>
+<dt>rms</dt><dd></dd>
+<dt>crms</dt><dd></dd>
+<dt>slope</dt><dd></dd>
 </dl>
 </dd>
 </dl>
@@ -627,7 +627,7 @@ Other input units are up to user’s consideration.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="calc.octaveband">
 <span class="sig-prename descclassname"><span class="pre">calc.</span></span><span class="sig-name descname"><span class="pre">octaveband</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['X',</span> <span class="pre">'Y',</span> <span class="pre">'Z']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunksize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calc.octaveband" title="Permalink to this definition">#</a></dt>
-<dd><p>Makes octave filtering of a signal acording to ANSI and averages it, by dafault to 1 sec.</p>
+<dd><p>Makes octave filtering of a signal acording to ANSI s1.11-2004 &amp;&amp; IEC 61260-1-2014 and averages it, by dafault to 1 sec.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -674,15 +674,20 @@ Other input units are up to user’s consideration.</p>
 <dt><strong>F</strong><span class="classifier">list</span></dt><dd><p>Frequencies to include in results, must be in data columns names.</p>
 </dd>
 <dt><strong>stat_params</strong><span class="classifier">list of int or str</span></dt><dd><p>List of numbers or names of the parameters.
-[1 : Max,
-2 : Mean,
-3 : RMS,
-4 : Mean + Sigma,
-5 : Mean + 2 Sigma,
-6 : Mean + 1.645 Sigma,
-7 : Mean + 2.33 Sigma,
-8 : L95,
-9 : L99 ]</p>
+1 : ‘Max’, - maximum values;
+2 : ‘Mean’, - mean values;
+3 : ‘RMS’, - root mean squared values;
+4 : ‘Mean+Sigma’, - mathematical expectation plus 1 standard deviation of the values. 
+Corresponds to an extended one-sided uncertainty with a confidence level of 95.0%;
+5 : ‘Mean+2Sigma’, - mathematical expectation plus 2 standard deviation of the values.
+Corresponds to an extended one-sided uncertainty with a confidence level of 95.0%;
+6 : ‘Mean+1.645Sigma’, - mathematical expectation plus 1.645 standard deviation of the values. 
+Corresponds to an extended one-sided uncertainty with a confidence level of 95.0%;
+7 : ‘Mean+2.33Sigma’, - mathematical expectation plus 2.33 standard deviation of the values. 
+Corresponds to an extended one-sided uncertainty with a confidence level of 99.0%;
+8 : ‘L95’, - actual measurement results with a coverage factor of 95% (percentile);
+9 : ‘L99’  - actual measurement results with a coverage factor of 99% (percentile).
+By default [1,2,4,5,8,9]</p>
 </dd>
 </dl>
 </dd>
@@ -909,17 +914,17 @@ Train length is assumed 153.6 m (standart Moscow metro train)</p>
 </dd>
 <dt><strong>unit: {‘dB’, other}, optional</strong></dt><dd><p>Units of input data. Necessary for correct conversion of values if input is in dB or absolute units, by default ‘abs’.</p>
 </dd>
-<dt><strong>F</strong><span class="classifier">_type_</span></dt><dd><p>_description_</p>
+<dt><strong>F</strong><span class="classifier">list</span></dt><dd><p><cite>fraction</cite> octave-band intervals mean frequencies.</p>
 </dd>
-<dt><strong>fraction</strong><span class="classifier">str, optional</span></dt><dd><p>_description_, by default ‘1/3’</p>
+<dt><strong>fraction</strong><span class="classifier">{‘1/1’, ‘1/3’}, optional</span></dt><dd><p>Octave band width, by default ‘1/3’</p>
 </dd>
-<dt><strong>showvc</strong><span class="classifier">bool, optional</span></dt><dd><p>_description_, by default True</p>
+<dt><strong>showvc</strong><span class="classifier">bool, optional</span></dt><dd><p>Show VC lines, by default True</p>
 </dd>
-<dt><strong>vclines</strong><span class="classifier">list, optional</span></dt><dd><p>_description_, by default [‘C’,’D’,’E’,’F’,’G’]</p>
+<dt><strong>vclines</strong><span class="classifier">list, optional</span></dt><dd><p>VC (Vibration Criteria) curves according to Colin Gordon, by default [‘C’,’D’,’E’,’F’,’G’]</p>
 </dd>
-<dt><strong>name</strong><span class="classifier">_type_, optional</span></dt><dd><p>_description_, by default f’statvc’</p>
+<dt><strong>name</strong><span class="classifier">str, optional</span></dt><dd><p>Name of the file to be saved, by default f’statvc’</p>
 </dd>
-<dt><strong>table</strong><span class="classifier">bool, optional</span></dt><dd><p>_description_, by default True</p>
+<dt><strong>table</strong><span class="classifier">bool, optional</span></dt><dd><p>Show a table with values plotted, by default True</p>
 </dd>
 <dt><strong>save</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether the picture should be saved, by default False</p>
 </dd>
